@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  # Backend API (Server Centrale)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app
+    restart: always
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_ENV=production
+      - SECRET_KEY=your_secret_key_here
+      - AUTH_USERNAME=admin
+      - AUTH_PASSWORD=secure_password_here
+
+  # Frontend Web
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+  # Agente MetaTrader (da eseguire su ogni server Windows)
+  # Questo è solo un esempio, l'agente verrà installato direttamente sui server Windows
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./agent:/app
+    restart: always
+    environment:
+      - FLASK_APP=agent.py
+      - FLASK_ENV=production
+      - MT5_PATH=C:\\Program Files\\MetaTrader 5\\terminal64.exe

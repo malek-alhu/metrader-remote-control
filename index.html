@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaTrader Remote Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            background-color: #212529;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            padding-top: 20px;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 5px;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+        }
+        .sidebar .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            font-weight: bold;
+        }
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #28a745;
+        }
+        .status-offline {
+            background-color: #dc3545;
+        }
+        .account-card {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .account-card:hover {
+            transform: translateY(-5px);
+        }
+        .position-card {
+            border-left: 4px solid #0d6efd;
+        }
+        .position-card.buy {
+            border-left-color: #28a745;
+        }
+        .position-card.sell {
+            border-left-color: #dc3545;
+        }
+        .profit-positive {
+            color: #28a745;
+        }
+        .profit-negative {
+            color: #dc3545;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <h3 class="text-center mb-4">MT5 Control</h3>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#dashboard">
+                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#servers">
+                            <i class="bi bi-server me-2"></i> Server
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#accounts">
+                            <i class="bi bi-person-badge me-2"></i> Account
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#master-slave">
+                            <i class="bi bi-link-45deg me-2"></i> Master-Slave
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#settings">
+                            <i class="bi bi-gear me-2"></i> Impostazioni
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Dashboard Section -->
+                <div id="dashboard" class="section active">
+                    <h2 class="mb-4">Dashboard</h2>
+                    
+                    <!-- Summary Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card text-white bg-primary">
+                                <div class="card-body">
+                                    <h5 class="card-title">Server Totali</h5>
+                                    <h2 class="card-text" id="total-servers">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-success">
+                                <div class="card-body">
+                                    <h5 class="card-title">Account Totali</h5>
+                                    <h2 class="card-text" id="total-accounts">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-info">
+                                <div class="card-body">
+                                    <h5 class="card-title">Posizioni Aperte</h5>
+                                    <h2 class="card-text" id="total-positions">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card text-white bg-warning">
+                                <div class="card-body">
+                                    <h5 class="card-title">Configurazioni M/S</h5>
+                                    <h2 class="card-text" id="total-ms-configs">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Server Status -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            Stato Server
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>URL</th>
+                                            <th>Stato</th>
+                                            <th>Account</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="server-status-table">
+                                        <!-- Server status rows will be added here dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Positions -->
+                    <div class="card">
+                        <div class="card-header">
+                            Posizioni Recenti
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Account</th>
+                                            <th>Simbolo</th>
+                                            <th>Tipo</th>
+                                            <th>Volume</th>
+                                            <th>Prezzo Apertura</th>
+                                            <th>Prezzo Attuale</th>
+                                            <th>Profitto</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-positions-table">
+                                        <!-- Recent positions will be added here dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Servers Section -->
+                <div id="servers" class="section d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Server</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServerModal">
+                            <i class="bi bi-plus-circle me-2"></i>Aggiungi Server
+                        </button>
+                    </div>
+                    
+                    <div class="row" id="server-cards-container">
+                        <!-- Server cards will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Accounts Section -->
+                <div id="accounts" class="section d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Account</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                            <i class="bi bi-plus-circle me-2"></i>Aggiungi Account
+                        </button>
+                    </div>
+                    
+                    <div class="row" id="account-cards-container">
+                        <!-- Account cards will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Master-Slave Section -->
+                <div id="master-slave" class="section d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Configurazioni Master-Slave</h2>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMasterSlaveModal">
+                            <i class="bi bi-plus-circle me-2"></i>Aggiungi Configurazione
+                        </button>
+                    </div>
+                    
+                    <div id="master-slave-configs-container">
+                        <!-- Master-Slave configurations will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Settings Section -->
+                <div id="settings" class="section d-none">
+                    <h2 class="mb-4">Impostazioni</h2>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            Impostazioni Generali
+                        </div>
+                        <div class="card-body">
+                            <form id="settings-form">
+                                <div class="mb-3">
+                                    <label for="api-url" class="form-label">URL API Backend</label>
+                                    <input type="text" class="form-control" id="api-url" value="http://localhost:5000">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="refresh-interval" class="form-label">Intervallo di Aggiornamento (secondi)</label>
+                                    <input type="number" class="form-control" id="refresh-interval" value="5" min="1" max="60">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Salva Impostazioni</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Server Modal -->
+    <div class="modal fade" id="addServerModal" tabindex="-1" aria-labelledby="addServerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addServerModalLabel">Aggiungi Server</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-server-form">
+                        <div class="mb-3">
+                            <label for="server-name" class="form-label">Nome Server</label>
+                            <input type="text" class="form-control" id="server-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="server-url" class="form-label">URL Server</label>
+                            <input type="text" class="form-control" id="server-url" required>
+                            <div class="form-text">Esempio: http://192.168.1.100:5001</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" id="add-server-btn">Aggiungi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Account Modal -->
+    <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAccountModalLabel">Aggiungi Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-account-form">
+                        <div class="mb-3">
+                            <label for="account-server" class="form-label">Server</label>
+                            <select class="form-select" id="account-server" required>
+                                <!-- Server options will be added here dynamically -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="account-number" class="form-label">Numero Account</label>
+                            <input type="text" class="form-control" id="account-number" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="account-password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="account-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="account-server-name" class="form-label">Nome Server MT5</label>
+                            <input type="text" class="form-control" id="account-server-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="account-description" class="form-label">Descrizione</label>
+                            <input type="text" class="form-control" id="account-description">
+            
+(Content truncated due to size limit. Use line ranges to read in chunks)
